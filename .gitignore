@@ -1,0 +1,15 @@
+*.json
+
+.idea/
+*.iml
+
+__pycache__/
+*.py[cod]
+
+venv/
+env/
+ENV/
+*.env
+
+*.log
+
