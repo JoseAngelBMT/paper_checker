@@ -4,7 +4,10 @@ from bs4 import BeautifulSoup
 import re
 import discord
 from discord.ext import commands, tasks
-from discord.ext.commands import Context, bot
+from discord.ext.commands import Context
+import pandas as pd
+import pytz
+from datetime import datetime
 
 _URL: str = "https://papermc.io/downloads/paper"
 _PATH_CONFIG: str = "config.json"
@@ -50,7 +53,37 @@ class DiscordBot(commands.Bot):
             save_new_version(_PATH_VERSION, paper_version)
             await ctx.send(f"Actual version: {paper_version}")
 
+        @commands.command(name="last_version")
+        async def last_version(ctx: Context, arg: str = commands.parameter(default=check_paper_version())) -> None:
+            url: str = f"https://api.papermc.io/v2/projects/paper/versions/{arg}/builds"
+            response: requests = requests.get(url)
+            if response.status_code != 200:
+                await ctx.send("Wrong version input")
+            else:
+                data: dict = response.json()
+                if 'builds' in data:
+                    builds_data = data['builds']
+                    df: pd.DataFrame = pd.DataFrame(builds_data)
+                    # df['time'] = pd.to_datetime(df['time'])
+                    df.sort_values(by='time', inplace=True, ascending=False)
+                    df.reset_index(drop=True, inplace=True)
+                    version_type: str = "experimental"
+                    if df['channel'].loc[0] == "default":
+                        version_type = "stable"
+                    date_time = convert_utc_madrid(df['time'].loc[0])
+                    await ctx.send(f"Version: {arg} #{df['build'].loc[0]}\n **{version_type.title()}** on **{date_time}**")
+                else:
+                    await ctx.send("Some problem with request")
+
         self.add_command(version)
+        self.add_command(last_version)
+
+
+def convert_utc_madrid(date_time: str) -> str:
+    utc_date_time: datetime = datetime.fromisoformat(date_time.replace("Z", "+00:00"))
+    madrid_zone: pytz = pytz.timezone('Europe/Madrid')
+    madrid_date_time: datetime = utc_date_time.astimezone(madrid_zone)
+    return madrid_date_time.strftime("%d/%m/%Y %H:%M:%S")
 
 
 def load_config(config_file: str) -> dict:
