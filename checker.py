@@ -127,3 +127,4 @@ if __name__ == '__main__':
         bot.run(config['token'])
     except Exception as e:
         print(f"An error occurred: {e}")
+        raise
