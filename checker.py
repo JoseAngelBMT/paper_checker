@@ -45,6 +45,18 @@ class DiscordBot(commands.Bot):
         if not self.check_and_update_version.is_running():
             self.check_and_update_version.start()
 
+    async def on_message(self, message: discord.Message) -> None:
+        if message.author.bot:
+            return
+
+        if self.user in message.mentions and "daily" in message.content.lower():
+            await message.channel.send("DALE!")
+
+        if "miércoles eh" in message.content.lower() or "miercoles eh" in message.content.lower():
+            await message.channel.send("", embed=discord.Embed().set_image(url="https://pbs.twimg.com/media/GWpRGcWWgAA7yr3.jpg"))
+
+        await self.process_commands(message)
+
     def register_commands(self) -> None:
 
         @commands.command(name="version")
